@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework.serializers import SerializerMethodField
-from .models import User
+from .models import User,Profile
 from django.contrib import auth
 from rest_framework.exceptions import AuthenticationFailed,ValidationError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -35,7 +35,7 @@ class LoginSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(max_length=255)
     password = serializers.CharField(max_length = 68,min_length = 6,write_only=True)
     tokens = serializers.SerializerMethodField()
-    #first_time_login = serializers.SerializerMethodField()
+    first_time_login = serializers.SerializerMethodField()
 
     def get_tokens(self, obj):
         user = User.objects.get(email=obj['email'])
@@ -43,17 +43,17 @@ class LoginSerializer(serializers.ModelSerializer):
             'refresh': user.tokens()['refresh'],
             'access': user.tokens()['access']
         }
-    # def get_first_time_login(self,obj):
-    #     qs = Profile.objects.get(owner__email = obj['email'])
-    #     if qs.name is None:
-    #         return True
-    #     return False
+    def get_first_time_login(self,obj):
+        qs = Profile.objects.get(owner__email = obj['email'])
+        if qs.name is None:
+            return True
+        return False
 
 
 
     class Meta:
         model = User
-        fields = ['id','email','password','tokens']
+        fields = ['id','email','password','tokens','first_time_login']
 
     def validate(self,attrs):
         email =  attrs.get('email','')
@@ -87,7 +87,15 @@ class LoginSerializer(serializers.ModelSerializer):
         
 
 
+class ProfileSerializer(serializers.ModelSerializer):
+    owner_id = SerializerMethodField()
 
+    def get_owner_id(self,obj):
+        user = self.context.get('user')
+        return User.objects.get(email=user).id
+    class Meta:
+        model = Profile
+        fields = ['owner_id','name','phone','institution_type','institution','about',]
 
 
 

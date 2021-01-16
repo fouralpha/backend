@@ -7,10 +7,11 @@ from .serializers import (
     RequestPasswordResetEmailSeriliazer,
     ResetPasswordEmailRequestSerializer,
     SetNewPasswordSerializer,
+    ProfileSerializer
 )
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import User
+from .models import User,Profile
 from .utils import Util
 from django.contrib.sites.shortcuts import get_current_site
 from django.urls import reverse
@@ -115,35 +116,33 @@ class SendVerificationMail(views.APIView):
         return Response({'status' : 'A Verification Email has been sent'},status = status.HTTP_200_OK)
 
 
-# class ProfileGetView(ListAPIView):
-#     serializer_class = ProfileSerializer
-#     permission_classes = [permissions.IsAuthenticated,IsOwner]
-#     queryset = Profile.objects.all()
+class ProfileGetView(ListAPIView):
+    serializer_class = ProfileSerializer
+    permission_classes = [permissions.IsAuthenticated,IsOwner]
+    queryset = Profile.objects.all()
 
-#     def get_queryset(self):
-#         return self.queryset.filter(owner=self.request.user)
+    def get_serializer_context(self,**kwargs):
+            data = super().get_serializer_context(**kwargs)
+            data['user'] = self.request.user.email
+            return data
+    def get_queryset(self):
+        return self.queryset.filter(owner=self.request.user)
 
 
 
-# class ProfileUpdateView(UpdateAPIView):
-#     serializer_class = ProfileSerializer
-#     permission_classes = [permissions.IsAuthenticated,IsOwner]
-#     queryset = Profile.objects.all()
-#     lookup_field = "owner_id__username"
+class ProfileUpdateView(UpdateAPIView):
+    serializer_class = ProfileSerializer
+    permission_classes = [permissions.IsAuthenticated,IsOwner]
+    queryset = Profile.objects.all()
+    lookup_field = "owner_id__id"
 
-#     def get_serializer_context(self,**kwargs):
-#         data = super().get_serializer_context(**kwargs)
-#         data['user'] = self.request.user.username
-#         return data
+    def get_serializer_context(self,**kwargs):
+        data = super().get_serializer_context(**kwargs)
+        data['user'] = self.request.user.email
+        return data
 
-#     def get_queryset(self):
-#         return self.queryset.filter(owner=self.request.user)
-
-#     def perform_update(self,serializer):
-#         uva = self.request.data['uva_handle']
-#         if not uva:
-#             pass
-#         return serializer.save(uva_id = get_uva(uva))
+    def get_queryset(self):
+        return self.queryset.filter(owner=self.request.user)
 
 class ChangePassword(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
