@@ -18,15 +18,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email','username','password']
-         
-    def validate(self,attrs):
-        email = attrs.get('email','')
-        username = attrs.get('username','')
-
-        if not username.isalnum():
-            raise serializers.ValidationError('The username should only contain alphanumeric characters')
-        return attrs
+        fields = ['email','password']
     
     def create(self,validated_data):
         return User.objects.create_user(**validated_data)
@@ -40,39 +32,35 @@ class EmailVerificationSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(max_length=255,read_only=True)
+    email = serializers.EmailField(max_length=255)
     password = serializers.CharField(max_length = 68,min_length = 6,write_only=True)
-    username = serializers.CharField(max_length = 100)
     tokens = serializers.SerializerMethodField()
-    first_time_login = serializers.SerializerMethodField()
+    #first_time_login = serializers.SerializerMethodField()
 
     def get_tokens(self, obj):
-        user = User.objects.get(username=obj['username'])
+        user = User.objects.get(email=obj['email'])
         return {
             'refresh': user.tokens()['refresh'],
             'access': user.tokens()['access']
         }
-    def get_first_time_login(self,obj):
-        qs = Profile.objects.get(owner__username = obj['username'])
-        if qs.name is None:
-            return True
-        return False
+    # def get_first_time_login(self,obj):
+    #     qs = Profile.objects.get(owner__email = obj['email'])
+    #     if qs.name is None:
+    #         return True
+    #     return False
 
 
 
     class Meta:
         model = User
-        fields = ['id','username','email','password','tokens','first_time_login']
+        fields = ['id','email','password','tokens']
 
     def validate(self,attrs):
-        username =  attrs.get('username','')
+        email =  attrs.get('email','')
         password =  attrs.get('password','')
-        user_obj_email = User.objects.filter(email=username).first()
-        user_obj_username = User.objects.filter(username=username).first()
+        user_obj_email = User.objects.filter(email=email).first()
         if user_obj_email:
-            # if user_obj_email.is_authenticated:
-            #     raise AuthenticationFailed('Already Logged In')
-            user = auth.authenticate(username = user_obj_email.username,password=password)
+            user = auth.authenticate(email = user_obj_email.email,password=password)
             if user_obj_email.auth_provider != 'email':
                 raise AuthenticationFailed(
                     detail='Please continue your login using ' + filtered_user_by_email[0].auth_provider)
@@ -86,37 +74,12 @@ class LoginSerializer(serializers.ModelSerializer):
                 current_site = self.context.get('current_site')
                 relative_link = reverse('email-verify')
                 absurl = 'https://' + current_site + relative_link + "?token=" + str(token)
-                email_body = 'Hi ' + user.username + '. Use link below to verify your email \n' + absurl
+                email_body = 'Hi ' + user.email + '. Use link below to verify your email \n' + absurl
                 data = {'email_body' : email_body,'email_subject' : 'Verify your email','to_email' : user.email}
                 Util.send_email(data)
                 raise AuthenticationFailed('Email is not verified, A Verification Email has been sent to your email address')
             return {
                 'email' : user.email,
-                'username' : user.username,
-                'tokens': user.tokens
-            }
-            return super().validate(attrs)
-        if user_obj_username:
-            # if user_obj_username.is_authenticated:
-            #     raise AuthenticationFailed('Already Logged In')
-            user = auth.authenticate(username = username,password=password)
-            if not user:
-                raise AuthenticationFailed('Invalid credentials. Try again')
-            if not user.is_active:
-                raise AuthenticationFailed('Account disabled. contact admin')
-            if not user.is_verified:
-                email = user.email
-                token = RefreshToken.for_user(user).access_token
-                current_site = self.context.get('current_site')
-                relative_link = reverse('email-verify')
-                absurl = 'https://' + current_site + relative_link + "?token=" + str(token)
-                email_body = 'Hi ' + user.username + '. Use link below to verify your email \n' + absurl
-                data = {'email_body' : email_body,'email_subject' : 'Verify your email','to_email' : user.email}
-                Util.send_email(data)
-                raise AuthenticationFailed('Email is not verified, A Verification Email has been sent to your email address')
-            return {
-                'email' : user.email,
-                'username' : user.username,
                 'tokens': user.tokens
             }
             return super().validate(attrs)

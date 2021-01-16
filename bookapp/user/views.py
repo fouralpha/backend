@@ -57,7 +57,7 @@ class RegisterView(generics.GenericAPIView):
 
 
         absurl = 'https://' + current_site + relative_link + "?token=" + str(token)
-        email_body = 'Hi ' + user.username + '. Use link below to verify your email \n' + absurl
+        email_body = 'Hi ' + user.email + '. Use link below to verify your email \n' + absurl
         data = {'email_body' : email_body,'email_subject' : 'Verify your email','to_email' : user.email}
         Util.send_email(data)
         return Response(user_data,status = status.HTTP_201_CREATED)
@@ -109,7 +109,7 @@ class SendVerificationMail(views.APIView):
         current_site = get_current_site(request).domain
         relative_link = reverse('email-verify')
         absurl = 'https://' + current_site + relative_link + "?token=" + str(token)
-        email_body = 'Hi ' + user.username + '. Use link below to verify your email \n' + absurl
+        email_body = 'Hi ' + user.email + '. Use link below to verify your email \n' + absurl
         data = {'email_body' : email_body,'email_subject' : 'Verify your email','to_email' : user.email}
         Util.send_email(data)
         return Response({'status' : 'A Verification Email has been sent'},status = status.HTTP_200_OK)
@@ -154,7 +154,7 @@ class ChangePassword(views.APIView):
         new_pass = data.get('new_pass',None)
         if old_pass is None or new_pass is None:
             return Response({'status' : 'Either the old or new password was not provided'},status=status.HTTP_400_BAD_REQUEST)
-        user = authenticate(username=self.request.user.username,password=old_pass)
+        user = authenticate(email=self.request.user.email,password=old_pass)
         if new_pass == old_pass:
             return Response({'status' : "The new password is same as the old password"},status=status.HTTP_400_BAD_REQUEST)
         if len(new_pass) < 6:

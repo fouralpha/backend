@@ -5,21 +5,19 @@ from django.db.models.signals import post_save
 from rest_framework_simplejwt.tokens import RefreshToken
 
 class UserManager(BaseUserManager):
-    def create_user(self,username,email,password=None):
-        if username is None:
-            raise TypeError('User should have a username')
+    def create_user(self,email,password=None):
         if email is None:
             raise TypeError('User should have an email')
 
-        user = self.model(username=username,email = self.normalize_email(email))
+        user = self.model(email = self.normalize_email(email))
         user.set_password(password)
         user.save() 
         return user
 
-    def create_superuser(self,username,email,password=None):
+    def create_superuser(self,email,password=None):
         if password is None:
             raise TypeError('Password should not be none')
-        user = self.create_user(username,email,password)
+        user = self.create_user(email,password)
         user.is_superuser = True
         user.is_staff = True
         user.is_verified = True
@@ -30,7 +28,6 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser,PermissionsMixin):
-    username = models.CharField(max_length=100,unique=True,db_index=True)
     email = models.EmailField(max_length=255,unique=True,db_index=True)
     is_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -40,17 +37,12 @@ class User(AbstractBaseUser,PermissionsMixin):
     auth_provider = models.CharField(
         max_length=255, blank=False,
         null=False, default='email')
-    USERNAME_FIELD = 'username'
-
-    REQUIRED_FIELDS = [ 
-        'email'
-    ]
-
+    USERNAME_FIELD = 'email'
 
     objects = UserManager()
 
     def __str__(self):
-        return self.username
+        return self.email
 
     def tokens(self):
         refresh = RefreshToken.for_user(self)
