@@ -76,18 +76,10 @@ class Profile(models.Model):
         if created:
             Profile.objects.create(owner=instance)
 
-INTEREST_CHOICES = (
-    ("0" , "None"),
-    ("1" , "Fiction"),
-    ("2" , "Non-Fiction"),
-    ("3", "JEE"),
-    ("4", 'Physics')
-)
-# fill these accordingly
 
 class Interest(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE,related_name="user")
-    interest = models.CharField(max_length=1,choices=INTEREST_CHOICES,default='0')
+    interest = models.CharField(max_length=100,null = True,blank=True)
 
     
     def __str__(self):
